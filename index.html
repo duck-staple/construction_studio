@@ -159,19 +159,154 @@ function openPrintView(){
   const report=$('report');
   const printWindow=window.open('','_blank');
   if(!printWindow){
-    // ポップアップが許可されない環境では、元画面の印刷機能にフォールバック
-    if(typeof window.print==='function'){window.print();}
-    else{toast('印刷画面を開けません。Safariでこのアプリを開いて再度お試しください');}
+    toast('印刷用画面を開けません。Safariのポップアップ設定をご確認ください');
     return;
   }
   const title='工事日報';
-  const html=`<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="apple-mobile-web-app-capable" content="yes"><title>${title}</title><style>
-    *{box-sizing:border-box}body{margin:0;padding:16px;font-family:-apple-system,BlinkMacSystemFont,"Hiragino Kaku Gothic ProN",sans-serif;color:#172b3d;background:#eef2f5}.actions{position:sticky;top:0;display:flex;gap:10px;padding:10px;background:#fff;border:1px solid #d9e3ea;border-radius:10px;margin:0 auto 14px;max-width:900px}.actions button{flex:1;min-height:52px;border:0;border-radius:8px;background:#10243b;color:white;font-size:17px;font-weight:700}.paper{max-width:900px;margin:0 auto;background:#fff;padding:22px;border:1px solid #d9e3ea}.report{padding:0}.report img{max-width:100%;height:auto}.report-photos{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.report-photo{border:1px solid #d6e0e7;break-inside:avoid}.report-photo img{width:100%;height:130px;object-fit:cover;display:block}.report-photo small{display:block;padding:5px}.report-top{display:flex;justify-content:space-between;border-bottom:3px solid #173d5c;padding-bottom:10px}.report-title{font-size:24px;font-weight:900}.report-sub,.report-no{font-size:11px}.report-meta{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));border:1px solid #cad6df;margin:12px 0}.meta{padding:8px;border-right:1px solid #cad6df;border-bottom:1px solid #cad6df}.meta label{display:block;font-size:11px;color:#718093}.meta b{font-size:13px}.report-section{margin-top:13px;break-inside:avoid}.report-section h3{font-size:13px;background:#eaf1f6;border-left:4px solid #1769aa;padding:7px;margin:0 0 6px}.report-section p{font-size:12px;line-height:1.65;margin:0;white-space:pre-wrap}.check{background:#fff8e9;border:1px solid #f0d49c;padding:9px;margin-top:12px}.check b,.check ul{font-size:11px}.report-foot{border-top:1px solid #d6e0e7;margin-top:12px;padding-top:7px;font-size:10px;display:flex;justify-content:space-between}
-    @page{size:A4 portrait;margin:10mm}@media print{body{padding:0;background:#fff}.actions{display:none!important}.paper{max-width:none;border:0;padding:0}.report-meta{grid-template-columns:repeat(4,minmax(0,1fr))}.report-photos{grid-template-columns:repeat(3,minmax(0,1fr))}.report-photo img{height:27mm}.report-section{margin-top:9px}.report-section h3{font-size:9pt}.report-section p{font-size:8.5pt}.report-photo small{font-size:7pt}.check{break-inside:avoid}}
-    </style></head><body><div class="actions"><button type="button" id="doPrint">印刷画面を開く／PDF保存</button><button type="button" id="closePrint" style="background:#607487">戻る</button></div><main class="paper"><article class="report">${report.innerHTML}</article></main><script>document.getElementById('doPrint').addEventListener('click',()=>window.print());document.getElementById('closePrint').addEventListener('click',()=>window.close());window.addEventListener('load',()=>setTimeout(()=>{try{window.print()}catch(e){}},700));<\/script></body></html>`;
-  printWindow.document.open();
-  printWindow.document.write(html);
-  printWindow.document.close();
+  const childScript = String.raw`
+'use strict';
+let pdfBlob=null, pdfFile=null, pdfUrl=null;
+const $id = id => document.getElementById(id);
+function status(message, isError=false){const el=$id('status');el.textContent=message;el.style.color=isError?'#b42318':'#31536b';}
+function textOf(selector){const el=document.querySelector(selector);return el?(el.innerText||el.textContent||'').trim():'要確認';}
+function wrapText(ctx, text, maxWidth){
+  const result=[]; const paragraphs=String(text||'要確認').split(/\n/);
+  for(const paragraph of paragraphs){
+    if(!paragraph){result.push('');continue;}
+    let line='';
+    for(const ch of Array.from(paragraph)){
+      const test=line+ch;
+      if(line && ctx.measureText(test).width>maxWidth){result.push(line);line=ch;}else{line=test;}
+    }
+    result.push(line);
+  }
+  return result;
+}
+async function imageBlob(img){
+  if(!img) return null;
+  if(!img.complete || !img.naturalWidth){try{await img.decode();}catch(e){}}
+  if(!img.naturalWidth) return null;
+  return img;
+}
+function makeCanvasPdfPages(){
+  const W=1240,H=1754,M=76,CONTENT=W-M*2;
+  const pages=[]; let canvas,ctx,y=0;
+  const ink='#172b3d', muted='#627487', blue='#173d5c', pale='#eaf1f6', rule='#cbd7e0';
+  function newPage(){
+    canvas=document.createElement('canvas');canvas.width=W;canvas.height=H;ctx=canvas.getContext('2d',{alpha:false});
+    ctx.fillStyle='#ffffff';ctx.fillRect(0,0,W,H);pages.push(canvas);y=M;
+    ctx.fillStyle=blue;ctx.font='bold 40px -apple-system, BlinkMacSystemFont, "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif';ctx.fillText('工 事 日 報',M,y+42);
+    ctx.fillStyle=muted;ctx.font='18px -apple-system, BlinkMacSystemFont, "Hiragino Kaku Gothic ProN", sans-serif';ctx.fillText(pages.length>1?'DAILY CONSTRUCTION REPORT（続き）':'DAILY CONSTRUCTION REPORT',M,y+72);
+    ctx.strokeStyle=blue;ctx.lineWidth=5;ctx.beginPath();ctx.moveTo(M,y+91);ctx.lineTo(W-M,y+91);ctx.stroke();y+=116;
+  }
+  function ensureSpace(height){if(y+height>H-M-55)newPage();}
+  function paragraph(text, fontSize=23, lineHeight=37, color=ink, indent=0){
+    ctx.font=fontSize+'px -apple-system, BlinkMacSystemFont, "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif';ctx.fillStyle=color;
+    const lines=wrapText(ctx,text,CONTENT-indent);
+    for(const line of lines){ensureSpace(lineHeight);ctx.fillText(line,M+indent,y+fontSize);y+=lineHeight;}
+    y+=9;
+  }
+  function section(title, content){
+    ensureSpace(66);ctx.fillStyle=pale;ctx.fillRect(M,y,CONTENT,44);ctx.fillStyle=blue;ctx.fillRect(M,y,7,44);
+    ctx.fillStyle=blue;ctx.font='bold 23px -apple-system, BlinkMacSystemFont, "Hiragino Kaku Gothic ProN", sans-serif';ctx.fillText(title,M+19,y+30);y+=57;
+    paragraph(content,22,35,ink,4);
+  }
+  newPage();
+  // Project metadata: two columns, two rows.
+  const fields=[['工事名',textOf('#rSite')],['作業日・天候',textOf('#rDate')],['作業場所',textOf('#rPlace')],['作業責任者',textOf('#rManager')]];
+  const cellW=(CONTENT-16)/2,cellH=78;
+  fields.forEach((f,i)=>{
+    const col=i%2,row=Math.floor(i/2),x=M+col*(cellW+16),yy=y+row*(cellH+10);
+    ctx.strokeStyle=rule;ctx.lineWidth=1.5;ctx.strokeRect(x,yy,cellW,cellH);
+    ctx.fillStyle=muted;ctx.font='17px -apple-system, BlinkMacSystemFont, "Hiragino Kaku Gothic ProN", sans-serif';ctx.fillText(f[0],x+13,yy+25);
+    ctx.fillStyle=ink;ctx.font='bold 21px -apple-system, BlinkMacSystemFont, "Hiragino Kaku Gothic ProN", sans-serif';
+    const valLines=wrapText(ctx,f[1],cellW-26).slice(0,2);valLines.forEach((line,j)=>ctx.fillText(line,x+13,yy+53+j*24));
+  });
+  y+=cellH*2+37;
+  section('1. 本日の作業内容',textOf('#rWork'));
+  // Photos: 3 columns, with pagination by row.
+  ensureSpace(55);ctx.fillStyle=pale;ctx.fillRect(M,y,CONTENT,44);ctx.fillStyle=blue;ctx.fillRect(M,y,7,44);ctx.fillStyle=blue;ctx.font='bold 23px -apple-system, BlinkMacSystemFont, "Hiragino Kaku Gothic ProN", sans-serif';ctx.fillText('2. 現場写真・デモ所見',M+19,y+30);y+=57;
+  const photoEls=[...document.querySelectorAll('.report-photo')];
+  if(!photoEls.length){paragraph('写真未登録',21,34,muted,4);}
+  for(let i=0;i<photoEls.length;i+=3){
+    const row=photoEls.slice(i,i+3);const boxH=218;ensureSpace(boxH+20);
+    const gap=15,boxW=(CONTENT-gap*2)/3;
+    for(let j=0;j<row.length;j++){
+      const x=M+j*(boxW+gap), yy=y, item=row[j], img=item.querySelector('img'), cap=item.querySelector('small');
+      ctx.strokeStyle=rule;ctx.strokeRect(x,yy,boxW,boxH);
+      if(img && img.naturalWidth){const iw=img.naturalWidth,ih=img.naturalHeight,scale=Math.max(boxW/iw,160/ih),sw=boxW/scale,sh=160/scale,sx=(iw-sw)/2,sy=(ih-sh)/2;ctx.drawImage(img,sx,sy,sw,sh,x,yy,boxW,160);}
+      else{ctx.fillStyle='#f1f4f6';ctx.fillRect(x,yy,boxW,160);ctx.fillStyle=muted;ctx.font='18px sans-serif';ctx.fillText('画像を表示できません',x+10,yy+85);}
+      ctx.fillStyle=ink;ctx.font='16px -apple-system, BlinkMacSystemFont, "Hiragino Kaku Gothic ProN", sans-serif';
+      const capLines=wrapText(ctx,cap?(cap.innerText||cap.textContent):('写真'+(i+j+1)),boxW-18).slice(0,2);capLines.forEach((line,k)=>ctx.fillText(line,x+9,yy+184+k*20));
+    }
+    y+=boxH+17;
+  }
+  section('3. 進捗・人員',textOf('#rProgress'));
+  section('4. 安全・品質・申し送り',textOf('#rSafety'));
+  section('5. 翌日の作業予定',textOf('#rNext'));
+  const checks=[...document.querySelectorAll('#rChecks li')].map(li=>(li.innerText||li.textContent||'').trim()).filter(Boolean);
+  ensureSpace(65);ctx.fillStyle='#fff8e9';ctx.fillRect(M,y,CONTENT,43);ctx.strokeStyle='#f0d49c';ctx.strokeRect(M,y,CONTENT,43);ctx.fillStyle='#765316';ctx.font='bold 21px -apple-system, BlinkMacSystemFont, "Hiragino Kaku Gothic ProN", sans-serif';ctx.fillText('AIが抽出した確認事項',M+14,y+29);y+=54;
+  checks.forEach(item=>paragraph('・'+item,19,30,'#765316',5));
+  // Footers are applied after page count is known.
+  pages.forEach((pg,i)=>{const c=pg.getContext('2d');c.strokeStyle=rule;c.lineWidth=1;c.beginPath();c.moveTo(M,H-M-35);c.lineTo(W-M,H-M-35);c.stroke();c.fillStyle=muted;c.font='15px -apple-system, BlinkMacSystemFont, "Hiragino Kaku Gothic ProN", sans-serif';c.fillText('※デモ用の整理結果です。提出前に現場責任者が内容を確認してください。',M,H-M-10);c.textAlign='right';c.fillText((i+1)+' / '+pages.length,W-M,H-M-10);c.textAlign='left';});
+  return pages;
+}
+async function canvasToJpegBytes(canvas){
+  const blob=await new Promise((resolve,reject)=>{canvas.toBlob(b=>b?resolve(b):reject(new Error('画像データを作成できませんでした')),'image/jpeg',0.9)});
+  return new Uint8Array(await blob.arrayBuffer());
+}
+function buildPdf(jpegs){
+  const enc=new TextEncoder(),chunks=[];let length=0;const offsets=[0];
+  function addText(s){const b=enc.encode(s);chunks.push(b);length+=b.length;}
+  function addBytes(b){chunks.push(b);length+=b.length;}
+  addText('%PDF-1.4\n% Genba AI Report\n');
+  const pageCount=jpegs.length;
+  offsets[1]=length;addText('1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n');
+  offsets[2]=length;const kids=jpegs.map((_,i)=>(3+i*3)+' 0 R').join(' ');addText('2 0 obj\n<< /Type /Pages /Kids ['+kids+'] /Count '+pageCount+' >>\nendobj\n');
+  jpegs.forEach((jpg,i)=>{
+    const pageId=3+i*3,imgId=pageId+1,contentId=pageId+2;
+    offsets[pageId]=length;addText(pageId+' 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595.28 841.89] /Resources << /XObject << /Im0 '+imgId+' 0 R >> >> /Contents '+contentId+' 0 R >>\nendobj\n');
+    offsets[imgId]=length;addText(imgId+' 0 obj\n<< /Type /XObject /Subtype /Image /Width 1240 /Height 1754 /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length '+jpg.length+' >>\nstream\n');addBytes(jpg);addText('\nendstream\nendobj\n');
+    const stream='q\n595.28 0 0 841.89 0 0 cm\n/Im0 Do\nQ\n',streamBytes=enc.encode(stream);
+    offsets[contentId]=length;addText(contentId+' 0 obj\n<< /Length '+streamBytes.length+' >>\nstream\n');addBytes(streamBytes);addText('endstream\nendobj\n');
+  });
+  const xrefOffset=length;addText('xref\n0 '+(pageCount*3+3)+'\n0000000000 65535 f \n');
+  for(let id=1;id<=pageCount*3+2;id++)addText(String(offsets[id]).padStart(10,'0')+' 00000 n \n');
+  addText('trailer\n<< /Size '+(pageCount*3+3)+' /Root 1 0 R >>\nstartxref\n'+xrefOffset+'\n%%EOF');
+  return new Blob(chunks,{type:'application/pdf'});
+}
+async function createPdf(){
+  const btn=$id('makePdf');btn.disabled=true;status('A4 PDFを作成しています。写真の枚数により少し時間がかかります…');
+  try{
+    const imgs=[...document.querySelectorAll('.report-photo img')];await Promise.all(imgs.map(imageBlob));
+    const pages=makeCanvasPdfPages();const jpegs=[];for(const page of pages)jpegs.push(await canvasToJpegBytes(page));
+    pdfBlob=buildPdf(jpegs);pdfFile=new File([pdfBlob],'工事日報.pdf',{type:'application/pdf'});
+    if(pdfUrl)URL.revokeObjectURL(pdfUrl);pdfUrl=URL.createObjectURL(pdfBlob);
+    const link=$id('openPdf');link.href=pdfUrl;link.style.display='block';link.textContent='PDFを開く（共有メニューから印刷）';
+    $id('sharePdf').disabled=false;status('PDFを作成しました。次に「共有・プリント」を押してください。共有シートで「プリント」を選択します。');
+    btn.textContent='PDFを再作成';btn.disabled=false;
+  }catch(err){console.error(err);status('PDF作成に失敗しました：'+(err&&err.message?err.message:'不明なエラー'),true);btn.disabled=false;}
+}
+function sharePdf(){
+  if(!pdfFile){status('先に「PDFを作成」を押してください。',true);return;}
+  const files=[pdfFile];
+  try{
+    if(navigator.share && navigator.canShare && navigator.canShare({files:files})){
+      // iOSではfilesのみのデータ構造にして共有互換性を高める。
+      navigator.share({files:files}).then(()=>status('共有メニューを閉じました。必要に応じて「PDFを開く」から再度操作できます。')).catch(err=>{if(err&&err.name!=='AbortError')status('共有を開始できませんでした。下の「PDFを開く」をお試しください。',true);});
+    }else{
+      status('この環境ではPDFの直接共有に対応していません。「PDFを開く」から開き、共有メニューでプリントしてください。');
+    }
+  }catch(err){status('共有を開始できませんでした。「PDFを開く」をお試しください。',true);}
+}
+$id('makePdf').addEventListener('click',createPdf);
+$id('sharePdf').addEventListener('click',sharePdf);
+$id('closePrint').addEventListener('click',()=>{try{window.close()}catch(e){history.back()}});
+`;
+  const html=`<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><meta name="apple-mobile-web-app-capable" content="yes"><title>${title}</title><style>
+    *{box-sizing:border-box}body{margin:0;padding:16px;font-family:-apple-system,BlinkMacSystemFont,"Hiragino Kaku Gothic ProN",sans-serif;color:#172b3d;background:#eef2f5}.actions{position:sticky;top:0;display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:12px;background:#fff;border:1px solid #d9e3ea;border-radius:12px;margin:0 auto 14px;max-width:900px;z-index:2}.actions button,.actions a{display:flex;align-items:center;justify-content:center;min-height:54px;border:0;border-radius:9px;background:#10243b;color:white;font-size:17px;font-weight:700;text-align:center;text-decoration:none;padding:8px}.actions button:disabled{opacity:.4}.actions .secondary{background:#526b80}.actions a{display:none;background:#1769aa;grid-column:1/-1}.guide{max-width:900px;margin:0 auto 14px;padding:12px 14px;background:#fff;border:1px solid #d9e3ea;border-radius:10px;font-size:15px;line-height:1.6}.guide strong{display:block;margin-bottom:4px}.status{display:block;margin-top:6px;color:#31536b;font-weight:600;overflow-wrap:anywhere}.paper{max-width:900px;margin:0 auto;background:#fff;padding:22px;border:1px solid #d9e3ea}.report{padding:0}.report img{max-width:100%;height:auto}.report-photos{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.report-photo{border:1px solid #d6e0e7;break-inside:avoid}.report-photo img{width:100%;height:130px;object-fit:cover;display:block}.report-photo small{display:block;padding:5px}.report-top{display:flex;justify-content:space-between;border-bottom:3px solid #173d5c;padding-bottom:10px}.report-title{font-size:24px;font-weight:900}.report-sub,.report-no{font-size:11px}.report-meta{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));border:1px solid #cad6df;margin:12px 0}.meta{padding:8px;border-right:1px solid #cad6df;border-bottom:1px solid #cad6df}.meta label{display:block;font-size:11px;color:#718093}.meta b{font-size:13px}.report-section{margin-top:13px;break-inside:avoid}.report-section h3{font-size:13px;background:#eaf1f6;border-left:4px solid #1769aa;padding:7px;margin:0 0 6px}.report-section p{font-size:12px;line-height:1.65;margin:0;white-space:pre-wrap}.check{background:#fff8e9;border:1px solid #f0d49c;padding:9px;margin-top:12px}.check b,.check ul{font-size:11px}.report-foot{border-top:1px solid #d6e0e7;margin-top:12px;padding-top:7px;font-size:10px;display:flex;justify-content:space-between}@media(max-width:600px){body{padding:10px}.actions{gap:8px;padding:10px}.actions button,.actions a{font-size:16px;min-height:56px}.guide{font-size:15px}.paper{padding:14px}}
+    </style></head><body><div class="actions"><button type="button" id="makePdf">A4 PDFを作成</button><button type="button" class="secondary" id="sharePdf" disabled>共有・プリント</button><a id="openPdf" target="_blank" rel="noopener">PDFを開く（共有メニューから印刷）</a><button type="button" class="secondary" id="closePrint" style="grid-column:1/-1">日報画面に戻る</button></div><div class="guide"><strong>iPhoneでの印刷手順</strong>①「A4 PDFを作成」→ ②「共有・プリント」→ ③共有シートで「プリント」を選択します。見つからない場合は「PDFを開く」からPDFを開き、PDFの共有メニューを使用してください。<span class="status" id="status" role="status" aria-live="polite">印刷用PDFを作成してください。</span></div><main class="paper"><article class="report">${report.innerHTML}</article></main><script>${childScript}<\/script></body></html>`;
+  printWindow.document.open();printWindow.document.write(html);printWindow.document.close();
   try{printWindow.focus();}catch(e){}
 }
 $('print').addEventListener('click',()=>{
