@@ -11,6 +11,82 @@
 @media(min-width:760px){.wrap{padding:0 20px}.layout{display:grid;grid-template-columns:minmax(0,.92fr) minmax(0,1.08fr);gap:16px;align-items:start}.preview{position:sticky;top:12px}.report{padding:23px}.report-meta{grid-template-columns:repeat(4,1fr)}.meta{border-bottom:0}.meta:nth-child(2n){border-right:1px solid #cad6df}.meta:last-child{border-right:0}.report-photos{grid-template-columns:repeat(3,1fr)}}
 @media(max-width:380px){.photo-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.upload-actions{grid-template-columns:1fr}.hero h1{font-size:20px}}
 @media print{ @page{size:A4 portrait;margin:10mm}body{background:#fff;font-size:12px}.top,.hero,.input-column,.panel-head,.preview-actions,.local-label,.toast{display:none!important}.wrap{margin:0;padding:0;max-width:none}.layout{display:block}.preview{position:static}.panel{border:0;box-shadow:none;margin:0}.report{padding:0;min-height:0}.report-top{padding-bottom:8px}.report-title{font-size:18pt}.report-meta{grid-template-columns:repeat(4,1fr);margin:8px 0}.meta{border-bottom:0}.meta:nth-child(2n){border-right:1px solid #cad6df}.meta:last-child{border-right:0}.report-section{margin-top:9px;break-inside:avoid}.report-section h3{font-size:9pt}.report-section p{font-size:8.5pt}.report-photos{grid-template-columns:repeat(3,1fr)}.report-photo img{height:27mm}.report-photo small{font-size:7pt}.check{break-inside:avoid}.report-foot{font-size:7pt}}
+
+/* v4: iPhoneでの視認性・タップ操作性を改善 */
+@media screen and (max-width: 759px){
+  body{font-size:18px;line-height:1.65}
+  .top{padding-left:18px;padding-right:18px;min-height:66px}
+  .brand{font-size:22px}
+  .brand small{font-size:12px}
+  .demo-pill{font-size:12px;padding:7px 10px}
+  .wrap{margin:12px auto;padding:0 14px 32px}
+  .hero{margin:8px 2px 16px}
+  .hero h1{font-size:25px;line-height:1.4;margin-bottom:7px}
+  .hero p{font-size:15px;line-height:1.6}
+  .steps{gap:6px;margin-top:14px}
+  .step{font-size:13px;padding:9px 3px;line-height:1.35}
+  .panel{border-radius:16px;margin-bottom:16px}
+  .panel-head{padding:16px}
+  .panel-head h2{font-size:19px;line-height:1.4}
+  .tag{font-size:13px;padding:6px 10px}
+  .panel-body{padding:16px}
+  .field-grid{grid-template-columns:1fr;gap:15px}
+  .field label{font-size:16px;line-height:1.45;margin-bottom:7px}
+  .field input,.field select,.field textarea{min-height:56px;padding:13px 14px;font-size:18px;border-radius:12px}
+  .field textarea{min-height:132px;line-height:1.7}
+  .upload{padding:19px 14px}
+  .upload strong{font-size:18px;line-height:1.5}
+  .upload span{font-size:14px;line-height:1.6}
+  .upload-actions{gap:10px;margin-top:14px}
+  .filebtn{min-height:56px;padding:12px 9px;font-size:15px;line-height:1.4}
+  .photo-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+  .photo button{width:36px;height:36px;font-size:22px}
+  .photo .phlabel{font-size:12px;padding:18px 7px 6px}
+  .drive-help{font-size:14px;line-height:1.7;padding:13px}
+  .voicebox{padding:15px}
+  .voice-row{gap:14px}
+  .mic{flex-basis:64px;width:64px;height:64px;font-size:27px}
+  .voice-info{font-size:14px;line-height:1.65}
+  .voice-info b{font-size:16px;line-height:1.5}
+  .voice-actions{gap:9px;margin-top:13px}
+  .btn{min-height:54px;padding:12px 15px;font-size:15px;line-height:1.4;border-radius:12px}
+  .generate{min-height:64px;margin-top:16px;font-size:18px;font-weight:850}
+  .notice{font-size:13px;line-height:1.7;margin-top:12px}
+  .report{padding:18px 15px}
+  .report-title{font-size:23px}
+  .report-sub{font-size:12px}
+  .report-no{font-size:12px}
+  .report-no b{font-size:14px}
+  .report-meta{margin:13px 0}
+  .meta{padding:9px 8px}
+  .meta label{font-size:12px;line-height:1.45}
+  .meta b{font-size:14px;line-height:1.5}
+  .report-section{margin-top:15px}
+  .report-section h3{font-size:15px;line-height:1.5;padding:8px 10px;margin-bottom:8px}
+  .report-section p{font-size:14px;line-height:1.8}
+  .report-photo img{height:125px}
+  .report-photo small{font-size:12px;line-height:1.5;padding:6px}
+  .check{padding:11px;margin-top:14px}
+  .check b{font-size:14px;line-height:1.5}
+  .check ul{font-size:13px;line-height:1.7;padding-left:20px}
+  .report-foot{font-size:11px;line-height:1.5;flex-wrap:wrap}
+  .preview-actions{padding:14px;gap:10px}
+  .preview-actions .btn{min-height:56px;font-size:15px}
+  .local-label{font-size:13px;line-height:1.65;padding:10px 14px 14px}
+  .empty{font-size:13px;padding:24px 10px}
+  .ai-box h2{font-size:23px}
+  .ai-box p{font-size:15px;line-height:1.7}
+  .ai-stage{font-size:14px}
+  .done{font-size:11px}
+  .toast{font-size:14px;line-height:1.5;padding:13px 17px}
+}
+@media screen and (max-width: 380px){
+  .hero h1{font-size:23px}
+  .step{font-size:12px}
+  .upload-actions{grid-template-columns:1fr}
+  .preview-actions{grid-template-columns:1fr}
+}
+
 </style>
 </head>
 <body>
