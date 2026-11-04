@@ -1,5 +1,5 @@
 /* 現場AI日報 PWA Service Worker */
-const CACHE_NAME = 'genba-ai-report-v7';
+const CACHE_NAME = 'genba-ai-report-v8';
 const APP_SHELL = [
   './',
   './index.html',
