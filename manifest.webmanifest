@@ -2,7 +2,7 @@
   "id": "./",
   "name": "現場AI日報",
   "short_name": "現場AI日報",
-  "description": "写真と作業内容から工事日報を作成するデモアプリ",
+  "description": "大きな文字と図記号で、現場写真と音声から工事日報を作成するデモアプリ",
   "lang": "ja",
   "start_url": "./",
   "scope": "./",
@@ -11,8 +11,23 @@
   "background_color": "#f1f5f8",
   "theme_color": "#10243b",
   "icons": [
-    { "src": "./icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
-    { "src": "./icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
-    { "src": "./icons/icon-512-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+    {
+      "src": "./icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./icons/icon-512-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
   ]
 }
